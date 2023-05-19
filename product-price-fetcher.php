@@ -3,7 +3,7 @@
 /*
   Plugin Name: Product Price Fetcher
   Description: Fetch Product Prices from .csv file.
-  Version 1.1
+  Version 1.2
   Author: Aleksandar
   Author URI: https://www.linkedin.com/in/aleksandar-petreski/
 */
@@ -63,8 +63,6 @@ class ProductPriceFetcherPlugin {
           $handle = fopen($_FILES['file']['tmp_name'], "r");
           $headers = fgetcsv($handle, 1000, ",");
 
-          $ret = false;
-
           while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
 
             $get_url = $data[0];
@@ -75,11 +73,11 @@ class ProductPriceFetcherPlugin {
 
               foreach($html->find('body') as $article) {
 
-                // Find the title of the current article
-                if( $title = $article->find('#base_price', 0) ) {
-                    $item['price'] = trim( $title->plaintext );
-                } elseif( $title = $article->find('#primary .woocommerce-Price-amount bdi', 0) ) {
-                    $item['price'] = trim( $title->plaintext );
+                // Find the price of the current product
+                if( $price_holder = $article->find('#base_price', 0) ) {
+                    $item['price'] = trim( $price_holder->plaintext );
+                } elseif( $price_holder = $article->find('#primary .woocommerce-Price-amount bdi', 0) ) {
+                    $item['price'] = trim( $price_holder->plaintext );
                 } else {
                     $item['price'] = 'unknown';
                 }
@@ -87,17 +85,18 @@ class ProductPriceFetcherPlugin {
               $html->clear();
               unset($html);
 
-              $price = $item['price'];
-              $price = str_replace(" ", "", $price);
+              $price = str_replace(" ", "", $item['price']);
               $price = str_replace("&#36;", "", $price);
 
               if ($price != 'unknown') {
                 $product = new WC_Product(wc_get_product_id_by_sku($sku));
                 if( $product instanceof WC_Product ) {
-                  $product_id = $product->get_id();
-                  update_post_meta( $product_id, '_regular_price', $price );
-                  update_post_meta( $product_id, '_price', $price );
-                  wp_update_post( array( 'ID' => $product_id ) );
+                  if($product->get_regular_price() != $price) {
+                    $product_id = $product->get_id();
+                    update_post_meta( $product_id, '_regular_price', $price );
+                    update_post_meta( $product_id, '_price', $price );
+                    wp_update_post( array( 'ID' => $product_id ) );
+                  }
                 }
               }
 
@@ -117,11 +116,7 @@ class ProductPriceFetcherPlugin {
             </div>
         <?php }
       }
-
-      ?>
-
-      
-    <?php }
+    }
   }
 
   function fetchProductPricePage() { ?>
