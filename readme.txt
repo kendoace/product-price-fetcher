@@ -4,7 +4,7 @@ Contributors: https://profiles.wordpress.org/kendoace/
 Tags: html, product, fetcher, woocommerce, csv
 Requires at least: 6.0
 Tested up to: 6.2.1
-Stable tag: 1.2
+Stable tag: 1.4.2
 Requires at least PHP: 7.4
 
 ------------------------------------------------------------------------
