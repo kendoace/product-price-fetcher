@@ -2,6 +2,8 @@
 
 /*
   Plugin Name: Product Price Fetcher
+  Plugin URI: https://github.com/kendoace/product-price-fetcher/
+  GitHub Plugin URI: kendoace/product-price-fetcher/
   Description: Fetch Product Prices from .csv file.
   Version 1.21
   Author: Aleksandar
