@@ -3,7 +3,7 @@
 /*
   Plugin Name: Product Price Fetcher
   Description: Fetch Product Prices from .csv file.
-  Version 1.2
+  Version 1.21
   Author: Aleksandar
   Author URI: https://www.linkedin.com/in/aleksandar-petreski/
 */
@@ -63,6 +63,8 @@ class ProductPriceFetcherPlugin {
           $handle = fopen($_FILES['file']['tmp_name'], "r");
           $headers = fgetcsv($handle, 1000, ",");
 
+          $updatedCount = 0; // Initialize the counter for updated products
+
           while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
 
             $get_url = $data[0];
@@ -78,6 +80,8 @@ class ProductPriceFetcherPlugin {
                     $item['price'] = trim( $price_holder->plaintext );
                 } elseif( $price_holder = $article->find('#primary .woocommerce-Price-amount bdi', 0) ) {
                     $item['price'] = trim( $price_holder->plaintext );
+                } elseif( $price_holder = $article->find('span.wsm-cat-price-price-value.wsmjs-product-price', 0) ) {
+                    $item['price'] = trim( $price_holder->plaintext );
                 } else {
                     $item['price'] = 'unknown';
                 }
@@ -86,16 +90,19 @@ class ProductPriceFetcherPlugin {
               unset($html);
 
               $price = str_replace(" ", "", $item['price']);
-              $price = str_replace("&#36;", "", $price);
+              $price = preg_replace('/[\$,]/', '', $price);
 
               if ($price != 'unknown') {
                 $product = new WC_Product(wc_get_product_id_by_sku($sku));
                 if( $product instanceof WC_Product ) {
-                  if($product->get_regular_price() != $price) {
+                  $regular_price = floatval($product->get_regular_price());
+                  $new_price = floatval($price);
+                  if ($regular_price < $new_price) {
                     $product_id = $product->get_id();
                     update_post_meta( $product_id, '_regular_price', $price );
                     update_post_meta( $product_id, '_price', $price );
                     wp_update_post( array( 'ID' => $product_id ) );
+                    $updatedCount++;
                   }
                 }
               }
@@ -108,7 +115,7 @@ class ProductPriceFetcherPlugin {
           ?>
 
           <div class="updated">
-            <p>The product prices were successfully updated.</p>
+            <p><strong><?php echo $updatedCount; ?></strong> product prices were successfully updated.</p>
           </div>
         <?php } else { ?>
             <div class="error">
